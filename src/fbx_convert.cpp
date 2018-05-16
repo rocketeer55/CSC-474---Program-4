@@ -157,9 +157,11 @@ void DisplayAnimation(FbxAnimLayer* pAnimLayer, FbxNode* pNode, bool isSwitcher 
 void DisplayChannels(FbxNode* pNode, FbxAnimLayer* pAnimLayer, void(*DisplayCurve) (FbxAnimCurve* pCurve), void(*DisplayListCurve) (FbxAnimCurve* pCurve, FbxProperty* pProperty), bool isSwitcher);
 void DisplayCurveKeys(FbxAnimCurve* pCurve);
 void DisplayListCurveKeys(FbxAnimCurve* pCurve, FbxProperty* pProperty);
-void PrintAnimationData( FbxScene* lScene);
-void CalcTransRotAnim(FbxScene* lScene, FbxNode* lNode, int animno)
+void PrintAnimationData(all_animations *animations, FbxScene* lScene);
+void CalcTransRotAnim(animation *anim, FbxScene* lScene, FbxNode* lNode, int animno)
 {
+	bone_animation bone_anim;
+
 	FbxAnimStack* currAnimStack = lScene->GetSrcObject<FbxAnimStack>(animno);
 	FbxString animStackName = currAnimStack->GetName();
 	FbxString mAnimationName = animStackName.Buffer();
@@ -170,61 +172,81 @@ void CalcTransRotAnim(FbxScene* lScene, FbxNode* lNode, int animno)
 	int keyframecount = end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24) + 1;
 
 	const char* nodeName = lNode->GetName();
-	cout << endl << "\t" << "bone name: " << nodeName << endl << endl;
+	//cout << endl << "\t" << "bone name: " << nodeName << endl << endl;
+
+	bone_anim.bone = nodeName;
+	bone_anim.name = mAnimationName;
 
 	for (FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24); i <= end.GetFrameCount(FbxTime::eFrames24); ++i)
 	{
-	FbxTime currTime;
-	currTime.SetFrame(i, FbxTime::eFrames24);
-	long long time_ms=currTime.GetMilliSeconds();
-	cout << "\t" << "\t" << "frame time stamp (ms): " << time_ms << endl;
-	FbxDouble3 translation = lNode->EvaluateLocalTranslation(currTime);
-	float t1, t2, t3;
-	t1 = translation[0];
-	t2 = translation[1];
-	t3 = translation[2];
-	cout << "\t" << "\t" << "translation (x,y,z): " << t1 << ", " << t2 << ", " << t3 << endl;
 
-	FbxDouble3 rotation = lNode->EvaluateLocalRotation(currTime);
-	FbxAMatrix& loctraf = lNode->EvaluateLocalTransform(currTime);
+		keyframe kf;
 
-	float e1, e2, e3;
-	e1 = rotation[0];
-	e2 = rotation[1];
-	e3 = rotation[2];
+		FbxTime currTime;
+		currTime.SetFrame(i, FbxTime::eFrames24);
+		long long time_ms=currTime.GetMilliSeconds();
 
-	float u0, u1, u2, u3;
+		kf.timestamp_ms = time_ms;
 
-	u0 = sqrt(cos(e2*PIe / 180)*cos(e1*PIe / 180) + cos(e2*PIe / 180)*cos(e3*PIe / 180) - sin(e2*PIe / 180)*sin(e1*PIe / 180)*sin(e3*PIe / 180) + cos(e1*PIe / 180)* cos(e3*PIe / 180) + 1) / 2;
-	u1 = (cos(e1*PIe / 180)*sin(e3*PIe / 180) + cos(e2*PIe / 180)*sin(e3*PIe / 180) + sin(e2*PIe / 180)*sin(e1*PIe / 180)*cos(e3*PIe / 180)) / sqrt(cos(e2*PIe / 180)* cos(e1*PIe / 180) + cos(e2*PIe / 180)*cos(e3*PIe / 180) - sin(e2*PIe / 180)*sin(e1*PIe / 180)*sin(e3*PIe / 180) + cos(e1*PIe / 180)*cos(e3*PIe / 180) + 1) / 2;
-	u2 = (sin(e2*PIe / 180)*sin(e3*PIe / 180) - cos(e2*PIe / 180)*sin(e1*PIe / 180)*cos(e3*PIe / 180) - sin(e1*PIe / 180)) / sqrt(cos(e2*PIe / 180)*cos(e1*PIe / 180) + cos(e2*PIe / 180)*cos(e3*PIe / 180) - sin(e2*PIe / 180)*sin(e1*PIe / 180)*sin(e3*PIe / 180) + cos(e1*PIe / 180)*cos(e3*PIe / 180) + 1) / 2;
-	u3 = (sin(e2*PIe / 180)*cos(e1*PIe / 180) + sin(e2*PIe / 180)*cos(e3*PIe / 180) + cos(e2*PIe / 180)*sin(e1*PIe / 180)*sin(e3*PIe / 180)) / sqrt(cos(e2*PIe / 180)* cos(e1*PIe / 180) + cos(e2*PIe / 180)*cos(e3*PIe / 180) - sin(e2*PIe / 180)*sin(e1*PIe / 180)*sin(e3*PIe / 180) + cos(e1*PIe / 180)*cos(e3*PIe / 180) + 1) / 2;
+		//cout << "\t" << "\t" << "frame time stamp (ms): " << time_ms << endl;
+		FbxDouble3 translation = lNode->EvaluateLocalTranslation(currTime);
+		float t1, t2, t3;
+		t1 = translation[0];
+		t2 = translation[1];
+		t3 = translation[2];
+		//cout << "\t" << "\t" << "translation (x,y,z): " << t1 << ", " << t2 << ", " << t3 << endl;
 
-	u3 = -u3;
-	u0 = -u0;
+		kf.translation = vec3(t1, t2, t3);
 
-	e1 = e1*PIe / 180;
-	e2 = e2*PIe / 180;
-	e3 = e3*PIe / 180;
+		FbxDouble3 rotation = lNode->EvaluateLocalRotation(currTime);
+		FbxAMatrix& loctraf = lNode->EvaluateLocalTransform(currTime);
 
-	float q0, q1, q2, q3;
-	q0 = -(cos(e1 / 2)*cos(e2 / 2)*cos(e3 / 2) + sin(e1 / 2)*sin(e2 / 2)*sin(e3 / 2));
-	q1 = -(sin(e1 / 2)*cos(e2 / 2)*cos(e3 / 2) - cos(e1 / 2)*sin(e2 / 2)*sin(e3 / 2));
-	q2 =-( cos(e1 / 2)*sin(e2 / 2)*cos(e3 / 2) + sin(e1 / 2)*cos(e2 / 2)*sin(e3 / 2));
-	q3 =-( cos(e1 / 2)*cos(e2 / 2)*sin(e3 / 2) - sin(e1 / 2)*sin(e2 / 2)*cos(e3 / 2));
+		float e1, e2, e3;
+		e1 = rotation[0];
+		e2 = rotation[1];
+		e3 = rotation[2];
 
-	cout << "\t" << "\t" << "quaternion (i,j,k,re): " << q1 << ", " << q2 << ", " << q3 << ", " << q0 << endl;
+		float u0, u1, u2, u3;
 
-}
-for (int k = 0; k < lNode->GetChildCount();k++)
-	CalcTransRotAnim( lScene, lNode->GetChild(k), animno);
+		u0 = sqrt(cos(e2*PIe / 180)*cos(e1*PIe / 180) + cos(e2*PIe / 180)*cos(e3*PIe / 180) - sin(e2*PIe / 180)*sin(e1*PIe / 180)*sin(e3*PIe / 180) + cos(e1*PIe / 180)* cos(e3*PIe / 180) + 1) / 2;
+		u1 = (cos(e1*PIe / 180)*sin(e3*PIe / 180) + cos(e2*PIe / 180)*sin(e3*PIe / 180) + sin(e2*PIe / 180)*sin(e1*PIe / 180)*cos(e3*PIe / 180)) / sqrt(cos(e2*PIe / 180)* cos(e1*PIe / 180) + cos(e2*PIe / 180)*cos(e3*PIe / 180) - sin(e2*PIe / 180)*sin(e1*PIe / 180)*sin(e3*PIe / 180) + cos(e1*PIe / 180)*cos(e3*PIe / 180) + 1) / 2;
+		u2 = (sin(e2*PIe / 180)*sin(e3*PIe / 180) - cos(e2*PIe / 180)*sin(e1*PIe / 180)*cos(e3*PIe / 180) - sin(e1*PIe / 180)) / sqrt(cos(e2*PIe / 180)*cos(e1*PIe / 180) + cos(e2*PIe / 180)*cos(e3*PIe / 180) - sin(e2*PIe / 180)*sin(e1*PIe / 180)*sin(e3*PIe / 180) + cos(e1*PIe / 180)*cos(e3*PIe / 180) + 1) / 2;
+		u3 = (sin(e2*PIe / 180)*cos(e1*PIe / 180) + sin(e2*PIe / 180)*cos(e3*PIe / 180) + cos(e2*PIe / 180)*sin(e1*PIe / 180)*sin(e3*PIe / 180)) / sqrt(cos(e2*PIe / 180)* cos(e1*PIe / 180) + cos(e2*PIe / 180)*cos(e3*PIe / 180) - sin(e2*PIe / 180)*sin(e1*PIe / 180)*sin(e3*PIe / 180) + cos(e1*PIe / 180)*cos(e3*PIe / 180) + 1) / 2;
 
+		u3 = -u3;
+		u0 = -u0;
+
+		e1 = e1*PIe / 180;
+		e2 = e2*PIe / 180;
+		e3 = e3*PIe / 180;
+
+		float q0, q1, q2, q3;
+		q0 = -(cos(e1 / 2)*cos(e2 / 2)*cos(e3 / 2) + sin(e1 / 2)*sin(e2 / 2)*sin(e3 / 2));
+		q1 = -(sin(e1 / 2)*cos(e2 / 2)*cos(e3 / 2) - cos(e1 / 2)*sin(e2 / 2)*sin(e3 / 2));
+		q2 =-( cos(e1 / 2)*sin(e2 / 2)*cos(e3 / 2) + sin(e1 / 2)*cos(e2 / 2)*sin(e3 / 2));
+		q3 =-( cos(e1 / 2)*cos(e2 / 2)*sin(e3 / 2) - sin(e1 / 2)*sin(e2 / 2)*cos(e3 / 2));
+
+		//cout << "\t" << "\t" << "quaternion (i,j,k,re): " << q1 << ", " << q2 << ", " << q3 << ", " << q0 << endl;
+
+		kf.quaternion.w = q0;
+		kf.quaternion.x = q1;
+		kf.quaternion.y = q2;
+		kf.quaternion.z = q3;
+
+
+		bone_anim.keyframes.push_back(kf);
+	}
+
+	anim->bone_animations.push_back(bone_anim);
+
+	for (int k = 0; k < lNode->GetChildCount();k++)
+		CalcTransRotAnim(anim, lScene, lNode->GetChild(k), animno);
 }
 
 
 
 //***************************************************************************************************************************************************************
-void PrintAnimationData(FbxScene* lScene)
+void PrintAnimationData(all_animations *animations, FbxScene* lScene)
 {
 	int i;
 
@@ -240,6 +262,7 @@ void PrintAnimationData(FbxScene* lScene)
 	FbxNode* lNode = lScene->GetRootNode();
 	for (int l = 0; l < count_animations; l++)
 	{		
+		animation anim;
 		FbxAnimStack* currAnimStack = lScene->GetSrcObject<FbxAnimStack>(l);
 		FbxString animStackName = currAnimStack->GetName();
 		FbxString mAnimationName = animStackName.Buffer();
@@ -249,13 +272,20 @@ void PrintAnimationData(FbxScene* lScene)
 		long long duration = end.GetMilliSeconds();
 		int keyframecount = end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24) + 1;
 
+		anim.name = mAnimationName;
+		anim.duration = duration;
+		anim.keyframe_count = keyframecount;
 		cout << endl;
-		cout << "animation name: " << mAnimationName << endl;
-		cout << "key frame count: " << keyframecount << endl;
-		cout << "animation duration (ms): " << duration << endl;
+		//cout << "animation name: " << mAnimationName << endl;
+		//cout << "key frame count: " << keyframecount << endl;
+		//cout << "animation duration (ms): " << duration << endl;
 		for (int k = 0; k < lNode->GetChildCount(); k++)
-			CalcTransRotAnim(lScene, lNode->GetChild(k), l);
+			CalcTransRotAnim(&anim, lScene, lNode->GetChild(k), l);
+
+		animations->animations.push_back(anim);
 	}
+
+
 }
 //***************************************************************************************************************************************************************
 void DisplayAnimation(FbxScene* pScene)
@@ -698,7 +728,7 @@ void DisplayListCurveKeys(FbxAnimCurve* pCurve, FbxProperty* pProperty)
 * and prints its contents in an xml format to stdout.
 */
 
-int readtobone(bone **proot) 
+int readtobone(bone **proot, all_animations *animations) 
 {
 
 	//ifstream fileHandle("fgdfg");
@@ -780,11 +810,11 @@ int readtobone(bone **proot)
 	///	Animation Data 
 	/////////////////
 	//extract animation stacks
-	/*int numStacks = lScene->GetSrcObjectCount(FBX_TYPE(FbxAnimStack));*/
+	int numStacks = lScene->GetSrcObjectCount();
 
-	//cout << endl;
-	//cout << "Animation" << endl;	
-	//PrintAnimationData(lScene);
+	cout << endl;
+	cout << "Animation" << endl;	
+	PrintAnimationData(animations, lScene);
 
 	/////////////////////
 	/////	End

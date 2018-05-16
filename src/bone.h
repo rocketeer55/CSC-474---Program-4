@@ -11,13 +11,35 @@ public:
 	quat quaternion;
 	vec3 translation;
 	long long timestamp_ms;
-	mat4 convert();
 };
+
+
+
+class bone_animation {
+public:
+	vector<keyframe> keyframes;
+	string name, bone;
+};
+
+class animation {
+public:
+	vector<bone_animation> bone_animations;
+	string name;
+	long long duration;
+	int keyframe_count;
+};
+
+class all_animations {
+public:
+	vector<animation> animations;
+};
+
 
 
 class bone
 {
 public:
+	vector<bone_animation> animations;
 	vector<keyframe> keyframes;
 	mat4 *array_element = NULL;
 	void set_matrix(int time) {
@@ -42,4 +64,4 @@ public:
 	}
 
 };
-int readtobone(bone **root);
+int readtobone(bone **root, all_animations *animations);

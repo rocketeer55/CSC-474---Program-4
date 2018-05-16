@@ -108,9 +108,12 @@ public:
 
 	bone *root = NULL;
 	int size_stick = 0;
+    all_animations animations;
 
 	void initGeom(const std::string& resourceDirectory) {
-		readtobone(&root);
+		readtobone(&root, &animations);
+
+
 
         //generate the VAO
         glGenVertexArrays(1, &VAO);
