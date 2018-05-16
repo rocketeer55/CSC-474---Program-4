@@ -77,8 +77,6 @@ bone *root=NULL;
 int indexcount = 0;
 void PrintNode(bone *actual, FbxNode* pNode, int lastlevel)
 {
-	
-
 	actual->index = indexcount++;
 	//actual->mat = &modelmat[actual->index];
 
@@ -126,25 +124,21 @@ void PrintNode(bone *actual, FbxNode* pNode, int lastlevel)
 	int child_count = pNode->GetChildCount();
 	cout << "bone children count: " << child_count << endl;
 	cout << "bone children names:" << endl;
-	for (int j = 0; j < pNode->GetChildCount(); j++)
-		{
-	
+	for (int j = 0; j < pNode->GetChildCount(); j++) {
 		cout << "\t" << pNode->GetChild(j)->GetName() << endl;
-		}
+	}
 
 	//for (int i = 0; i < pNode->GetNodeAttributeCount(); i++)
 	//	PrintAttribute(file,pNode->GetNodeAttributeByIndex(i));
 
 	// Recursively print the children.
 	for (int j = 0; j < pNode->GetChildCount(); j++)
-	{
+	{	
 		bone *k = new bone;
 		actual->kids.push_back(k);
 		k->parent = actual;
 		PrintNode(k,pNode->GetChild(j), level);
 	}
-
-
 }
 
 void CountBones(FbxNode* pNode, int &count)
@@ -771,16 +765,14 @@ int readtobone(bone **proot)
 	cout << "count bones: " << count_bones << endl;
 	
 	
-		bone *root = new bone;
-		*proot = root;
+	bone *root = new bone;
+	*proot = root;
 
 	if (lRootNode) 	
 	{
 		int anz = lRootNode->GetChildCount();
 		for (int i = 0; i < lRootNode->GetChildCount(); i++)//nur einen knochen machen
-			{
-			PrintNode(root,lRootNode->GetChild(i), -1);
-			}			
+			PrintNode(root,lRootNode->GetChild(i), -1);		
 	}
 
 	cout << "----------------------------------------------------------------------------------------------------" << endl;
@@ -802,6 +794,3 @@ int readtobone(bone **proot)
 	//system("pause");
 	return 0;
 }
-
-
-

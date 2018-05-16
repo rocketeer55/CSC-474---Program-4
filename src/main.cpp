@@ -36,6 +36,9 @@ public:
 
     std::shared_ptr<Shape> shape;
 	std::shared_ptr<Program> phongShader;
+
+    GLuint VAO;
+    GLuint VBO, imat_VBO;
     
     double gametime = 0;
     bool wireframeEnabled = false;
@@ -105,12 +108,33 @@ public:
 
 	bone *root = NULL;
 	int size_stick = 0;
+
 	void initGeom(const std::string& resourceDirectory) {
 		readtobone(&root);
-        shape = make_shared<Shape>();
-        shape->loadMesh(resourceDirectory + "/sphere.obj");
-        shape->resize();
-        shape->init();
+
+        //generate the VAO
+        glGenVertexArrays(1, &VAO);
+        glBindVertexArray(VAO);
+
+        //generate vertex buffer to hand off to OGL
+        glGenBuffers(1, &VBO);
+        //set the current state to focus on our vertex buffer
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        
+        vector<vec3> pos;
+        vector<unsigned int> imat;
+        root->write_to_VBOs(vec3(0, 0, 0), pos, imat);
+        size_stick = pos.size();
+        //actually memcopy the data - only do this once
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*pos.size(), pos.data(), GL_DYNAMIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        //indices of matrix:
+        glGenBuffers(1, &imat_VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, imat_VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(uint)*imat.size(), imat.data(), GL_DYNAMIC_DRAW);
+        glEnableVertexAttribArray(1);
+        glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, 0, (void*)0);
 	}
 	
 	void init(const std::string& resourceDirectory) {
@@ -151,7 +175,19 @@ public:
         M = glm::translate(glm::mat4(1), glm::vec3(0, 0, -3));
         phongShader->bind();
         phongShader->setMVP(&M[0][0], &V[0][0], &P[0][0]);
-        shape->draw(phongShader, false);
+
+
+        glBindVertexArray(VAO);
+
+        glm::mat4 TransZ = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -8));
+        glm::mat4 S = glm::scale(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0.01f));
+        M = TransZ * S;
+        glUniformMatrix4fv(phongShader->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+        //glUniformMatrix4fv(phongShader->getUniform("Manim"), 200, GL_FALSE, &animmat[0][0][0]);
+        glDrawArrays(GL_LINES, 4, size_stick-4);
+        glBindVertexArray(0);   
+
+
         phongShader->unbind();
 	}
 };
