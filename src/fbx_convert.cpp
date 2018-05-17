@@ -172,7 +172,7 @@ void CalcTransRotAnim(animation *anim, FbxScene* lScene, FbxNode* lNode, int ani
 	int keyframecount = end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24) + 1;
 
 	const char* nodeName = lNode->GetName();
-	//cout << endl << "\t" << "bone name: " << nodeName << endl << endl;
+	//	cout << endl << "\t" << "bone name: " << nodeName << endl << endl;
 
 	bone_anim.bone = nodeName;
 	bone_anim.name = mAnimationName;
@@ -284,8 +284,6 @@ void PrintAnimationData(all_animations *animations, FbxScene* lScene)
 
 		animations->animations.push_back(anim);
 	}
-
-
 }
 //***************************************************************************************************************************************************************
 void DisplayAnimation(FbxScene* pScene)

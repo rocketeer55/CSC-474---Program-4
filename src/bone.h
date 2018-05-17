@@ -13,8 +13,6 @@ public:
 	long long timestamp_ms;
 };
 
-
-
 class bone_animation {
 public:
 	vector<keyframe> keyframes;
@@ -33,8 +31,6 @@ class all_animations {
 public:
 	vector<animation> animations;
 };
-
-
 
 class bone
 {
