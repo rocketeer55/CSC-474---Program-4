@@ -158,9 +158,9 @@ void DisplayChannels(FbxNode* pNode, FbxAnimLayer* pAnimLayer, void(*DisplayCurv
 void DisplayCurveKeys(FbxAnimCurve* pCurve);
 void DisplayListCurveKeys(FbxAnimCurve* pCurve, FbxProperty* pProperty);
 void PrintAnimationData(all_animations *animations, FbxScene* lScene);
-void CalcTransRotAnim(animation *anim, FbxScene* lScene, FbxNode* lNode, int animno)
+void CalcTransRotAnim(all_animations *all_animations, FbxScene* lScene, FbxNode* lNode, int animno)
 {
-	bone_animation bone_anim;
+	animation_per_bone anim;
 
 	FbxAnimStack* currAnimStack = lScene->GetSrcObject<FbxAnimStack>(animno);
 	FbxString animStackName = currAnimStack->GetName();
@@ -174,8 +174,10 @@ void CalcTransRotAnim(animation *anim, FbxScene* lScene, FbxNode* lNode, int ani
 	const char* nodeName = lNode->GetName();
 	//	cout << endl << "\t" << "bone name: " << nodeName << endl << endl;
 
-	bone_anim.bone = nodeName;
-	bone_anim.name = mAnimationName;
+	anim.bone = nodeName;
+	anim.name = mAnimationName;
+	anim.duration = duration;
+	anim.frames = keyframecount;
 
 	for (FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24); i <= end.GetFrameCount(FbxTime::eFrames24); ++i)
 	{
@@ -196,7 +198,9 @@ void CalcTransRotAnim(animation *anim, FbxScene* lScene, FbxNode* lNode, int ani
 		t3 = translation[2];
 		//cout << "\t" << "\t" << "translation (x,y,z): " << t1 << ", " << t2 << ", " << t3 << endl;
 
-		kf.translation = vec3(t1, t2, t3);
+		kf.translation.x = t1;
+		kf.translation.y = t2;
+		kf.translation.z = t3;
 
 		FbxDouble3 rotation = lNode->EvaluateLocalRotation(currTime);
 		FbxAMatrix& loctraf = lNode->EvaluateLocalTransform(currTime);
@@ -234,19 +238,19 @@ void CalcTransRotAnim(animation *anim, FbxScene* lScene, FbxNode* lNode, int ani
 		kf.quaternion.z = q3;
 
 
-		bone_anim.keyframes.push_back(kf);
+		anim.keyframes.push_back(kf);
 	}
 
-	anim->bone_animations.push_back(bone_anim);
+	all_animations->animations.push_back(anim);
 
 	for (int k = 0; k < lNode->GetChildCount();k++)
-		CalcTransRotAnim(anim, lScene, lNode->GetChild(k), animno);
+		CalcTransRotAnim(all_animations, lScene, lNode->GetChild(k), animno);
 }
 
 
 
 //***************************************************************************************************************************************************************
-void PrintAnimationData(all_animations *animations, FbxScene* lScene)
+void PrintAnimationData(all_animations *all_animations, FbxScene* lScene)
 {
 	int i;
 
@@ -262,7 +266,6 @@ void PrintAnimationData(all_animations *animations, FbxScene* lScene)
 	FbxNode* lNode = lScene->GetRootNode();
 	for (int l = 0; l < count_animations; l++)
 	{		
-		animation anim;
 		FbxAnimStack* currAnimStack = lScene->GetSrcObject<FbxAnimStack>(l);
 		FbxString animStackName = currAnimStack->GetName();
 		FbxString mAnimationName = animStackName.Buffer();
@@ -272,17 +275,11 @@ void PrintAnimationData(all_animations *animations, FbxScene* lScene)
 		long long duration = end.GetMilliSeconds();
 		int keyframecount = end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24) + 1;
 
-		anim.name = mAnimationName;
-		anim.duration = duration;
-		anim.keyframe_count = keyframecount;
-		cout << endl;
 		//cout << "animation name: " << mAnimationName << endl;
 		//cout << "key frame count: " << keyframecount << endl;
 		//cout << "animation duration (ms): " << duration << endl;
 		for (int k = 0; k < lNode->GetChildCount(); k++)
-			CalcTransRotAnim(&anim, lScene, lNode->GetChild(k), l);
-
-		animations->animations.push_back(anim);
+			CalcTransRotAnim(all_animations, lScene, lNode->GetChild(k), l);
 	}
 }
 //***************************************************************************************************************************************************************
@@ -726,7 +723,7 @@ void DisplayListCurveKeys(FbxAnimCurve* pCurve, FbxProperty* pProperty)
 * and prints its contents in an xml format to stdout.
 */
 
-int readtobone(bone **proot, all_animations *animations) 
+int readtobone(bone **proot, all_animations *all_animations) 
 {
 
 	//ifstream fileHandle("fgdfg");
@@ -787,10 +784,10 @@ int readtobone(bone **proot, all_animations *animations)
 	for (int i = 0; i < child_count; i++)//nur einen knochen machen
 		CountBones(lRootNode->GetChild(i),count_bones);
 
-	cout << endl;
-	cout << "Skeleton" << endl;
-	cout << endl;
-	cout << "count bones: " << count_bones << endl;
+	//cout << endl;
+	//cout << "Skeleton" << endl;
+	//cout << endl;
+	//cout << "count bones: " << count_bones << endl;
 	
 	
 	bone *root = new bone;
@@ -808,17 +805,17 @@ int readtobone(bone **proot, all_animations *animations)
 	///	Animation Data 
 	/////////////////
 	//extract animation stacks
-	int numStacks = lScene->GetSrcObjectCount();
+	//int numStacks = lScene->GetSrcObjectCount();
 
-	cout << endl;
-	cout << "Animation" << endl;	
-	PrintAnimationData(animations, lScene);
+	//cout << endl;
+	//cout << "Animation" << endl;	
+	PrintAnimationData(all_animations, lScene);
 
 	/////////////////////
 	/////	End
 	///////////////////
 	//// Destroy the SDK manager and all the other objects it was handling.
-	//lSdkManager->Destroy();
+	lSdkManager->Destroy();
 	//system("pause");
 	return 0;
 }

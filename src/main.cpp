@@ -39,6 +39,9 @@ public:
 
     GLuint VAO;
     GLuint VBO, imat_VBO;
+
+    mat4 animmat[200];
+    int animmatsize=0;
     
     double gametime = 0;
     bool wireframeEnabled = false;
@@ -108,12 +111,12 @@ public:
 
 	bone *root = NULL;
 	int size_stick = 0;
-    all_animations animations;
+    all_animations all_animation;
 
 	void initGeom(const std::string& resourceDirectory) {
-		readtobone(&root, &animations);
+		readtobone(&root, &all_animation);
 
-
+        root->set_animations(&all_animation, animmat, animmatsize);
 
         //generate the VAO
         glGenVertexArrays(1, &VAO);
@@ -126,6 +129,7 @@ public:
         
         vector<vec3> pos;
         vector<unsigned int> imat;
+
         root->write_to_VBOs(vec3(0, 0, 0), pos, imat);
         size_stick = pos.size();
         //actually memcopy the data - only do this once
@@ -138,6 +142,8 @@ public:
         glBufferData(GL_ARRAY_BUFFER, sizeof(uint)*imat.size(), imat.data(), GL_DYNAMIC_DRAW);
         glEnableVertexAttribArray(1);
         glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, 0, (void*)0);
+
+        glBindVertexArray(0);
 	}
 	
 	void init(const std::string& resourceDirectory) {
@@ -150,6 +156,8 @@ public:
         phongShader = std::make_shared<Program>();
         phongShader->setShaderNames(resourceDirectory + "/phong.vert", resourceDirectory + "/phong.frag");
         phongShader->init();
+
+        phongShader->addUniform("Manim");
 	}
     
     glm::mat4 getPerspectiveMatrix() {
@@ -159,8 +167,27 @@ public:
     }
 
 	void render() {
-		double frametime = get_last_elapsed_time();
-		gametime += frametime;
+		glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        double frametime = get_last_elapsed_time();
+        static double totaltime_ms=0;
+        totaltime_ms += frametime*1000.0;
+        static double totaltime_untilframe_ms = 0;
+        totaltime_untilframe_ms += frametime*1000.0;
+
+        for (int ii = 0; ii < 200; ii++)
+            animmat[ii] = mat4(1);
+
+
+        //animation frame system
+        int anim_step_width_ms = 8490 / 204;
+        static int frame = 0;
+        if (totaltime_untilframe_ms >= anim_step_width_ms)
+            {
+            totaltime_untilframe_ms = 0;
+            frame++;
+            }
+        root->play_animation(frame,"axisneurontestfile_Avatar00");  //name of current animation 
 
 		// Clear framebuffer.
 		glClearColor(0.3f, 0.7f, 0.8f, 1.0f);
@@ -186,7 +213,7 @@ public:
         glm::mat4 S = glm::scale(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0.01f));
         M = TransZ * S;
         glUniformMatrix4fv(phongShader->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-        //glUniformMatrix4fv(phongShader->getUniform("Manim"), 200, GL_FALSE, &animmat[0][0][0]);
+        glUniformMatrix4fv(phongShader->getUniform("Manim"), 200, GL_FALSE, &animmat[0][0][0]);
         glDrawArrays(GL_LINES, 4, size_stick-4);
         glBindVertexArray(0);   
 

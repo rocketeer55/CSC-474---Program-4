@@ -13,50 +13,93 @@ public:
 	long long timestamp_ms;
 };
 
-class bone_animation {
+class animation_per_bone {
 public:
-	vector<keyframe> keyframes;
 	string name, bone;
-};
-
-class animation {
-public:
-	vector<bone_animation> bone_animations;
-	string name;
 	long long duration;
-	int keyframe_count;
+	int frames;
+	vector<keyframe> keyframes;
 };
 
 class all_animations {
 public:
-	vector<animation> animations;
+	vector<animation_per_bone> animations;
 };
 
 class bone
 {
 public:
-	vector<bone_animation> animations;
-	vector<keyframe> keyframes;
-	mat4 *array_element = NULL;
-	void set_matrix(int time) {
-		if (array_element != NULL)
-			*array_element = mat4(1.f);
-	}
+	vector<animation_per_bone*> animation;
+
 	string name;
 	vec3 pos;
 	quat q;
 	bone *parent = NULL;
 	vector<bone*> kids;
-	int index;
+	unsigned int index;
 	mat4 *mat = NULL;
+
+	void play_animation(int keyframenumber, string animationname) {
+		for (unsigned int i = 0; i < animation.size(); i++) {
+			if (animation[i]->name == animationname) {
+				if (animation[i]->keyframes.size() > keyframenumber) {
+					
+					quat q = animation[i]->keyframes[keyframenumber].quaternion;
+					vec3 tr = animation[i]->keyframes[keyframenumber].translation;
+					mat4 M = mat4(q);
+					mat4 T = translate(mat4(1), tr);
+					M = T * M;
+					if (mat) {
+						mat4 parentmat = mat4(1);
+
+						if (parent)
+							parentmat = *parent->mat;
+
+						*mat = parentmat * M;
+						}
+				}
+
+				else
+					*mat = mat4(1);
+
+			}
+		}
+		for (int i = 0; i < kids.size(); i++)
+			kids[i]->play_animation(keyframenumber,animationname);
+	}
+
+
 	void write_to_VBOs(vec3 origin,vector<vec3> &vpos, vector<unsigned int> &imat)
 	{
+		if (parent) {
+			imat.push_back(parent->index);
+		}
+		else {
+			imat.push_back(index);
+		}
+		imat.push_back(index);
+
 		vpos.push_back(origin);
 		vec3 endp = origin + pos;
 		vpos.push_back(endp);
+
 		for (unsigned int i = 0; i < kids.size(); i++)
 			kids[i]->write_to_VBOs(endp, vpos, imat);
 
+	}
+
+	void set_animations(all_animations *all_anim, mat4 *matrices, int &animsize) {
+		for (unsigned int i = 0; i < all_anim->animations.size(); i++) {
+			if (all_anim->animations[i].bone == name) {
+				animation.push_back(&all_anim->animations[i]);
+			}
+		}
+
+		mat = &matrices[index];
+		animsize++;
+
+		for (unsigned int i = 0; i < kids.size(); i++)
+			kids[i]->set_animations(all_anim, matrices, animsize);
 	}
 
 };
