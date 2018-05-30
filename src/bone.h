@@ -42,26 +42,24 @@ public:
 	void play_animation(int keyframenumber, string animationname) {
 		for (unsigned int i = 0; i < animation.size(); i++) {
 			if (animation[i]->name == animationname) {
-				if (animation[i]->keyframes.size() > keyframenumber) {
-					
-					quat q = animation[i]->keyframes[keyframenumber].quaternion;
-					vec3 tr = animation[i]->keyframes[keyframenumber].translation;
-					mat4 M = mat4(q);
-					mat4 T = translate(mat4(1), tr);
-					M = T * M;
-					if (mat) {
-						mat4 parentmat = mat4(1);
-
-						if (parent)
-							parentmat = *parent->mat;
-
-						*mat = parentmat * M;
-						}
+				keyframenumber = keyframenumber % animation[i]->keyframes.size();
+				quat q = animation[i]->keyframes[keyframenumber].quaternion;
+				vec3 tr = animation[i]->keyframes[keyframenumber].translation;
+				if (name == "Humanoid:Hips") {
+					tr = vec3(0, 0, 0);
 				}
 
-				else
-					*mat = mat4(1);
+				mat4 M = mat4(q);
+				mat4 T = translate(mat4(1), tr);
+				M = T * M;
+				if (mat) {
+					mat4 parentmat = mat4(1);
 
+					if (parent)
+						parentmat = *parent->mat;
+
+					*mat = parentmat * M;
+				}
 			}
 		}
 		for (int i = 0; i < kids.size(); i++)
@@ -103,4 +101,4 @@ public:
 	}
 
 };
-int readtobone(bone **root, all_animations *animations);
+int readtobone(std::string s, bone **root, all_animations *animations);

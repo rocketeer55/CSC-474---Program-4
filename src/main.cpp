@@ -114,7 +114,8 @@ public:
     all_animations all_animation;
 
 	void initGeom(const std::string& resourceDirectory) {
-		readtobone(&root, &all_animation);
+		readtobone(resourceDirectory + "/walk.fbx", &root, &all_animation);
+        readtobone(resourceDirectory + "/run.fbx", NULL, &all_animation);
 
         root->set_animations(&all_animation, animmat, animmatsize);
 
@@ -187,7 +188,8 @@ public:
             totaltime_untilframe_ms = 0;
             frame++;
             }
-        root->play_animation(frame,"axisneurontestfile_Avatar00");  //name of current animation 
+        root->play_animation(frame,"Clip_Walk_Cycle");  //name of current animation 
+        //root->play_animation(frame, "Clip_Run_Left_45Deg_Cycle");
 
 		// Clear framebuffer.
 		glClearColor(0.3f, 0.7f, 0.8f, 1.0f);
@@ -210,7 +212,7 @@ public:
         glBindVertexArray(VAO);
 
         glm::mat4 TransZ = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -8));
-        glm::mat4 S = glm::scale(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0.01f));
+        glm::mat4 S = glm::scale(glm::mat4(1.0f), glm::vec3(0.005f, 0.005f, 0.005f));
         M = TransZ * S;
         glUniformMatrix4fv(phongShader->getUniform("M"), 1, GL_FALSE, &M[0][0]);
         glUniformMatrix4fv(phongShader->getUniform("Manim"), 200, GL_FALSE, &animmat[0][0][0]);

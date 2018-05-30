@@ -171,6 +171,8 @@ void CalcTransRotAnim(all_animations *all_animations, FbxScene* lScene, FbxNode*
 	long long duration = end.GetMilliSeconds();
 	int keyframecount = end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24) + 1;
 
+	std::cout << "frames " << keyframecount << std::endl;
+
 	const char* nodeName = lNode->GetName();
 	//	cout << endl << "\t" << "bone name: " << nodeName << endl << endl;
 
@@ -723,14 +725,9 @@ void DisplayListCurveKeys(FbxAnimCurve* pCurve, FbxProperty* pProperty)
 * and prints its contents in an xml format to stdout.
 */
 
-int readtobone(bone **proot, all_animations *all_animations) 
+int readtobone(string s, bone **proot, all_animations *all_animations) 
 {
-
-	//ifstream fileHandle("fgdfg");
-	string name_of_file;
-	cout << endl << "Enter filename:" << endl;
-	getline(cin,name_of_file);
-	const char* lFilename = name_of_file.c_str();
+	const char* lFilename = s.c_str();
 	FILE *checkfile=fopen(lFilename,"rb");
 	if (!checkfile)
 		{
@@ -789,15 +786,17 @@ int readtobone(bone **proot, all_animations *all_animations)
 	//cout << endl;
 	//cout << "count bones: " << count_bones << endl;
 	
-	
-	bone *root = new bone;
-	*proot = root;
+	if (proot != NULL) {
 
-	if (lRootNode) 	
-	{
-		int anz = lRootNode->GetChildCount();
-		for (int i = 0; i < lRootNode->GetChildCount(); i++)//nur einen knochen machen
-			PrintNode(root,lRootNode->GetChild(i), -1);		
+		bone *root = new bone;
+		*proot = root;
+
+		if (lRootNode) 	
+		{
+			int anz = lRootNode->GetChildCount();
+			for (int i = 0; i < lRootNode->GetChildCount(); i++)//nur einen knochen machen
+				PrintNode(root,lRootNode->GetChild(i), -1);		
+		}
 	}
 
 	cout << "----------------------------------------------------------------------------------------------------" << endl;
