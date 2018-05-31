@@ -40,6 +40,10 @@ public:
     GLuint VAO;
     GLuint VBO, imat_VBO;
 
+    bool walk_next = false;
+    bool run_next = false;
+    bool slowmo = false;
+
     mat4 animmat[200];
     int animmatsize=0;
     
@@ -60,28 +64,9 @@ public:
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 		// Movement
-        if (key == GLFW_KEY_W && action != GLFW_REPEAT) camera->vel.z = (action == GLFW_PRESS) * -0.2f;
-        if (key == GLFW_KEY_S && action != GLFW_REPEAT) camera->vel.z = (action == GLFW_PRESS) * 0.2f;
-        if (key == GLFW_KEY_A && action != GLFW_REPEAT) camera->vel.x = (action == GLFW_PRESS) * -0.2f;
-        if (key == GLFW_KEY_D && action != GLFW_REPEAT) camera->vel.x = (action == GLFW_PRESS) * 0.2f;
-        // Rotation
-        if (key == GLFW_KEY_I && action != GLFW_REPEAT) camera->rotVel.x = (action == GLFW_PRESS) * 0.02f;
-        if (key == GLFW_KEY_K && action != GLFW_REPEAT) camera->rotVel.x = (action == GLFW_PRESS) * -0.02f;
-        if (key == GLFW_KEY_J && action != GLFW_REPEAT) camera->rotVel.y = (action == GLFW_PRESS) * 0.02f;
-        if (key == GLFW_KEY_L && action != GLFW_REPEAT) camera->rotVel.y = (action == GLFW_PRESS) * -0.02f;
-        if (key == GLFW_KEY_U && action != GLFW_REPEAT) camera->rotVel.z = (action == GLFW_PRESS) * 0.02f;
-        if (key == GLFW_KEY_O && action != GLFW_REPEAT) camera->rotVel.z = (action == GLFW_PRESS) * -0.02f;
-        // Polygon mode (wireframe vs solid)
-        if (key == GLFW_KEY_P && action == GLFW_PRESS) {
-            wireframeEnabled = !wireframeEnabled;
-            glPolygonMode(GL_FRONT_AND_BACK, wireframeEnabled ? GL_LINE : GL_FILL);
-        }
-        // Hide cursor (allows unlimited scrolling)
-        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-            mouseCaptured = !mouseCaptured;
-            glfwSetInputMode(window, GLFW_CURSOR, mouseCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
-            resetMouseMoveInitialValues(window);
-        }
+        if (key == GLFW_KEY_1 && action == GLFW_PRESS) {walk_next = true;}
+        if (key == GLFW_KEY_2 && action == GLFW_PRESS) {run_next = true;}
+        if (key == GLFW_KEY_3 && action == GLFW_PRESS) {slowmo = !slowmo;}
 	}
 
 	void mouseCallback(GLFWwindow *window, int button, int action, int mods) {
@@ -179,17 +164,47 @@ public:
         for (int ii = 0; ii < 200; ii++)
             animmat[ii] = mat4(1);
 
+        static int current_animation = 1;
+        static int next_animation = 1;
+
 
         //animation frame system
-        int anim_step_width_ms = 8490 / 204;
+        int anim_step_width_ms = root->getDuration(next_animation) / root->getKeyFrameCount(next_animation);
         static int frame = 0;
-        if (totaltime_untilframe_ms >= anim_step_width_ms)
-            {
+        if (totaltime_untilframe_ms >= anim_step_width_ms) {
             totaltime_untilframe_ms = 0;
             frame++;
-            }
-        root->play_animation(frame,"Clip_Walk_Cycle");  //name of current animation 
-        //root->play_animation(frame, "Clip_Run_Left_45Deg_Cycle");
+        }
+
+        if (slowmo) {
+        	if (frame >= (root->animation[next_animation]->frames - 2) * 10) {
+        		frame = 0;
+        		current_animation = next_animation;
+        		if (walk_next) {
+        			next_animation = 0;
+        		}
+        		else if (run_next) {
+        			next_animation = 1;
+        		}
+        		walk_next = run_next = false;
+        	}
+        	root->play_slowmo_animation(frame, current_animation, next_animation);
+        }
+        else {
+	        if (frame >= root->animation[next_animation]->frames - 1) {
+	        	// We're at the end of our animation - Set frames to 0 and see if we should swap
+	        	frame = 0;
+	        	current_animation = next_animation;
+	        	if (walk_next) {
+	        		next_animation = 0;
+	        	}
+	        	else if (run_next) {
+	        		next_animation = 1;
+	        	}
+	        	walk_next = run_next = false;
+	        }
+	        root->play_animation(frame, current_animation, next_animation);
+	    }
 
 		// Clear framebuffer.
 		glClearColor(0.3f, 0.7f, 0.8f, 1.0f);
