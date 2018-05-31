@@ -1,3 +1,22 @@
+# PROGRAM 4
+
+1 = walk
+2 = run
+3 = toggle slowmotion
+
+Walking stutters a little bit when looping, but for the most part I think the animations and transitions are up to spec.
+Included is a video showcasing walking, running, and slowmotion of both.
+
+Transition between regular and slowmotion is not present, I don't think that was required.
+
+
+
+
+
+
+
+
+
 # CSC 474 Base Code
 Base code for computer graphics.
 
